@@ -1,7 +1,9 @@
 uniform vec2 u_winsize;
 
-#define MAX 5
+#define MAX 10
 #define TOL 1e-3
+
+#define PI 3.14159265359
 
 struct Ray {
   vec3 position;
@@ -26,10 +28,12 @@ struct Bulb {
   float strength;
 };
 
-Bulb b = Bulb(vec3(1., 0., 3.), vec4(1.), 10.);
+Bulb b = Bulb(vec3(0., 0., 1.), vec4(1.), 10.);
 
 float shade(Ray r) {
-  return dot(r.direction, normalize(b.position - r.position));
+  float cosine = dot(r.direction, normalize(b.position - r.position));
+  float power = b.strength / 4 / PI / pow(distance(b.position, r.position), 2.);
+  return clamp(cosine * power, 0., 1.);
 }
 
 vec4 intersect(inout Ray r, Sphere s) {
@@ -72,6 +76,34 @@ vec4 intersect(inout Ray r, Plane p) {
   return p.color * shade(r);
 }
 
+vec4 background(Ray r) {
+  // like sphere with rad R
+  float R = 1000.;
+  vec3 p = r.position;
+  float a = dot(r.direction, r.direction);
+  float b = dot(r.direction, p) * 2.;
+  float c = dot(p, p) - pow(R, 2.);
+
+  float det = b * b - 4. * a * c;
+  if (det <= TOL)
+    return vec4(0.);
+
+  float t = (-b + sqrt(det)) / 2. / a;
+  t = max(t, (-b - sqrt(det)) / 2. / a);
+
+  vec3 pos = r.position + r.direction * t;
+  float theta = acos(pos.x / R);
+  float phi = acos(pos.z / R);
+
+  vec4 res = vec4(0.);
+  float divs = 3.;
+  if (mod(theta, PI / divs) < PI / divs / 2.)
+    res += vec4(1.);
+  if (mod(phi, PI / divs) < PI / divs / 2.)
+    res -= vec4(1.);
+  return abs(0.05 * res);
+}
+
 void main() {
   vec3 origin = vec3(0., -5., 0.);
   vec2 coord =
@@ -79,8 +111,9 @@ void main() {
   vec3 dir = vec3(coord.x, 1., coord.y);
   Ray ray = Ray(origin, dir);
 
-  Sphere sphere = Sphere(vec3(-1., 0., 0.), vec4(1.), 0.5);
-  Plane plane = Plane(vec3(0.5, 0., -1.), vec4(1.), vec3(1., 0., 0.));
+  Sphere sphere = Sphere(vec3(0.), vec4(1., 0., 0., 1.), 0.5);
+  Plane plane = Plane(vec3(1., 0., -1.), vec4(0., 0., 1., 1.),
+                      normalize(vec3(-2., 0., 1.)));
 
   vec4 col = vec4(0.);
   for (int hitN = MAX; hitN > 0; hitN--) {
@@ -88,5 +121,5 @@ void main() {
     col += intersect(ray, plane) * hitN;
   }
   gl_FragColor = col / MAX;
-  // gl_FragColor = vec4(shade(ray));
+  gl_FragColor += background(ray);
 }

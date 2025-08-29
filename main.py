@@ -1,12 +1,10 @@
 from vispy import app, gloo as gl
-from vispy.app.canvas import ResizeEvent
+from vispy.app.canvas import DrawEvent, ResizeEvent
 
-vertex = """
-attribute vec2 position;
+VERT = "attribute vec2 position;\
+        void main() { gl_Position = vec4(position, 0.0, 1.0); }"
+FRAG = open("main.glsl", "r").read()
 
-void main() { gl_Position = vec4(position, 0.0, 1.0); }
-"""
-fragment = open("main.glsl", "r").read()
 
 
 class Canvas(app.Canvas):
@@ -14,7 +12,7 @@ class Canvas(app.Canvas):
         super().__init__(size=(1200, 800), title="Ray Test", keys="interactive")
 
         # Build program
-        self.program = gl.Program(vertex, fragment)
+        self.program = gl.Program(VERT, FRAG)
         self.program["u_winsize"] = (1200, 800)
 
         # Set uniforms and attributes
@@ -28,7 +26,7 @@ class Canvas(app.Canvas):
         gl.set_viewport(0, 0, *self.physical_size)
         self.show()
 
-    def on_draw(self, event):
+    def on_draw(self, _: DrawEvent):
         gl.clear()
         self.program.draw("triangle_strip")
 
