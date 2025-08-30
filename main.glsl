@@ -1,4 +1,7 @@
 uniform vec2 u_winsize;
+uniform vec3 u_pos;
+uniform float u_theta;
+uniform float u_phi;
 
 #define MAX 10
 #define TOL 1e-3
@@ -104,12 +107,35 @@ vec4 background(Ray r) {
   return abs(0.05 * res);
 }
 
+mat3 rotmat(float angle, vec3 axis) {
+  float s = sin(angle);
+  float c = cos(angle);
+  float m = 1. - cos(angle);
+  vec3 u = axis;
+  return mat3(u.x * u.x * m + c, u.x * u.y * m - u.z * s,
+              u.x * u.z * m + u.y * s, //
+
+              u.x * u.y * m + u.z * s, u.y * u.y * m + c,
+              u.y * u.z * m - u.x * s, //
+
+              u.x * u.z * m - u.y * s, u.y * u.z * m + u.x * s,
+              u.z * u.z * m + c //
+  );
+}
+
 void main() {
-  vec3 origin = vec3(0., -5., 0.);
   vec2 coord =
       (gl_FragCoord.xy - u_winsize / 2.) / min(u_winsize.x, u_winsize.y);
-  vec3 dir = vec3(coord.x, 1., coord.y);
-  Ray ray = Ray(origin, dir);
+
+  vec3 start = u_pos;
+  vec3 dir = normalize(vec3(coord.x, 1., coord.y));
+
+  mat3 rot =
+      rotmat(u_theta, vec3(0., 0., 1.)) * rotmat(u_phi, vec3(1., 0., 0.));
+  dir = rot * dir;
+  start = rot * start;
+
+  Ray ray = Ray(start, dir);
 
   Sphere sphere = Sphere(vec3(0.), vec4(1., 0., 0., 1.), 0.5);
   Plane plane = Plane(vec3(1., 0., -1.), vec4(0., 0., 1., 1.),
