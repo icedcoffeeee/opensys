@@ -20,7 +20,7 @@ realistic ray tracer based on photonics.
 - [x] sphere and plane test
 - [x] shading
 - [x] reflection
-- [ ] z ordering
+- [x] z ordering
 - [ ] shadows
 - [ ] wavelength implementations
 - [ ] complex value algebra
