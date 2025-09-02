@@ -6,6 +6,8 @@ realistic ray tracer based on photonics.
 > heavily work in progress. not abandoned, will be picked up at any (random)
 > point of interest. contributions are encouraged within moderation.
 
+![example](./example.png)
+
 ## comparison to PBR ray tracing
 - instead of albedo, metallic, roughness, etc. it aims to use a single complex
   function of refraction based on wavelength.
