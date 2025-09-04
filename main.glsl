@@ -1,12 +1,20 @@
+uniform vec2 u_winsize;
+uniform vec3 u_pos;
+uniform float u_theta;
+uniform float u_phi;
+
+#define MAX 10
+#define TOL 1e-3
+
+#define PI 3.14159265359
+
 #include "./setup.glsl";
 
-Bulb b = Bulb(vec3(0., 0., 1.), vec4(1.), 10.);
-
-float shade(Ray r) {
-  float cosine = dot(r.direction, normalize(b.position - r.position));
-  float power = b.strength / 4 / PI / pow(distance(b.position, r.position), 2.);
-  return clamp(cosine * power, 0., 1.);
-}
+Bulb b = Bulb(vec3(0., 0., 2.), vec4(1.), 10.);
+Sphere sphere1 = Sphere(vec3(0.), vec4(1.), 0.5);
+Sphere sphere2 = Sphere(vec3(1., -1., 0.), vec4(1.), 0.5);
+Sphere sphere3 = Sphere(vec3(1., 1., 0.), vec4(1.), 0.5);
+Plane plane = Plane(vec3(1., 0., -1.), vec4(1.), normalize(vec3(0., 0., 1.)));
 
 void intersect(inout Ray r, Sphere s) {
   // ray: p = p0 + d * t
@@ -104,6 +112,32 @@ mat3 rotmat(float angle, vec3 axis) {
   );
 }
 
+void traverse(inout Ray ray) {
+  ray.c = false;
+  ray.t = 1000.;
+
+  intersect(ray, sphere1);
+  intersect(ray, sphere2);
+  intersect(ray, sphere3);
+  intersect(ray, plane);
+}
+
+float shade(Ray r) {
+  Ray R = Ray(r.position, b.position - r.position, vec3(0.), vec4(0.), 1000.,
+              false);
+
+  if (dot(r.direction, r.normal) < 0.)
+    return 0.;
+
+  traverse(R);
+  if (R.c)
+    return 0.;
+
+  float cosine = dot(r.normal, normalize(b.position - r.position));
+  float power = b.strength / 4 / PI / pow(distance(b.position, r.position), 2.);
+  return clamp(cosine * power, 0., 1.);
+}
+
 void main() {
   vec2 coord =
       (gl_FragCoord.xy - u_winsize / 2.) / min(u_winsize.x, u_winsize.y);
@@ -111,28 +145,16 @@ void main() {
   vec3 start = u_pos;
   vec3 dir = normalize(vec3(coord.x, 1., coord.y));
 
-  mat3 rot =
-      rotmat(u_theta, vec3(0., 0., 1.)) * rotmat(u_phi, vec3(1., 0., 0.));
+  mat3 rot;
+  rot = rotmat(u_theta, vec3(0., 0., 1.));
+  rot *= rotmat(u_phi, vec3(1., 0., 0.));
   dir = rot * dir;
   start = rot * start;
 
   Ray ray = Ray(start, dir, vec3(0.), vec4(0.), 1000., false);
 
-  Sphere sphere1 = Sphere(vec3(0.), vec4(1., 0., 0., 1.), 0.5);
-  Sphere sphere2 = Sphere(vec3(1., -1., 0.), vec4(1., 1., 0., 1.), 0.5);
-  Sphere sphere3 = Sphere(vec3(1., 1., 0.), vec4(0., 1., 0., 1.), 0.5);
-  Plane plane = Plane(vec3(1., 0., -1.), vec4(0., 0., 1., 1.),
-                      normalize(vec3(0., 0., 1.)));
-
   for (int hitN = MAX; hitN > 0; hitN--) {
-    ray.c = false;
-    ray.t = 1000.;
-
-    intersect(ray, sphere1);
-    intersect(ray, sphere2);
-    intersect(ray, sphere3);
-    intersect(ray, plane);
-
+    traverse(ray);
     if (!ray.c)
       continue;
 
@@ -140,6 +162,6 @@ void main() {
     ray.direction = reflect(ray.direction, ray.normal);
     gl_FragColor += ray.color * shade(ray) * hitN;
   }
+
   gl_FragColor /= MAX;
-  gl_FragColor += background(ray);
 }

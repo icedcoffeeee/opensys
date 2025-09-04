@@ -1,13 +1,3 @@
-uniform vec2 u_winsize;
-uniform vec3 u_pos;
-uniform float u_theta;
-uniform float u_phi;
-
-#define MAX 10
-#define TOL 1e-3
-
-#define PI 3.14159265359
-
 struct Ray {
   vec3 position;
   vec3 direction;
@@ -37,4 +27,3 @@ struct Bulb {
 
   float strength;
 };
-

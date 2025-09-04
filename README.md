@@ -24,6 +24,8 @@ realistic ray tracer based on photonics.
 - [x] reflection
 - [x] z ordering
 - [ ] shadows
+    - [x] general
+    - [ ] specular and diffuse
 - [ ] wavelength implementations
 - [ ] complex value algebra
 - [ ] transmission
